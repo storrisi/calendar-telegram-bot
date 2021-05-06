@@ -4,12 +4,16 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "nodemon --exec babel-node ./"
   },
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "dotenv": "^9.0.0",
     "googleapis": "^73.0.0",
-    "moment": "^2.29.1"
+    "moment": "^2.29.1",
+    "nodemon": "^2.0.7",
+    "telegraf": "^4.3.0"
   }
 }
