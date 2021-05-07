@@ -33,13 +33,15 @@ class Event {
 
 
     formatFreeSlots(daySlots) {
-        let message = ""
+        let message = `*These are my free slots for the next 7 days:*
+`
         Object.keys(daySlots).map((daySlot) => {
             message += `
+            
 Slots available on ${moment(daySlot).format("dddd DD/MM/YYYY")}`
             daySlots[daySlot].map(slot => {
                 message += `
-    ${moment(slot.start).format("HH:mm")} - ${moment(slot.end).format("HH:mm")} [book this slot](https://calendar.google.com/calendar/u/0/r/eventedit?text=Your+Event+Name&dates=${moment(slot.start).format("YYYYMMDDTHHmm00Z")}/${moment(slot.end).format("YYYYMMDDTHHmm00Z")}&sf=true&output=xml&add=simo@fullstackish.io)`
+[${moment(slot.start).format("HH:mm")} - ${moment(slot.end).format("HH:mm")}](https://calendar.google.com/calendar/u/0/r/eventedit?text=Your+Event+Name&dates=${moment(slot.start).format("YYYYMMDDTHHmm00Z")}/${moment(slot.end).format("YYYYMMDDTHHmm00Z")}&sf=true&output=xml&add=simo@fullstackish.io)`
             })        
         })
         return message

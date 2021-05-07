@@ -22,12 +22,10 @@ fs.readFile('credentials.json', async (err, content) => {
     
     bot.on('inline_query', async (ctx) => {
         const events = await listEvents(credentials)
-
-        console.log(events)
         const result = [{
             type: 'article',
             title: "Show Next Week Calendar Slots",
-            id: "2322",
+            id: moment().toISOString(),
             input_message_content: {
                 message_text: events,
                 parse_mode: "Markdown"
