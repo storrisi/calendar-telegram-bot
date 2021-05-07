@@ -3,7 +3,7 @@ const fs = require('fs');
 const readline = require('readline');
 const moment = require('moment');
 const { google } = require('googleapis');
-const Event = require('./utils/EventClass');
+const Event = require('./EventClass');
 
 // If modifying these scopes, delete token.json.
 const SCOPES = ['https://www.googleapis.com/auth/calendar.readonly'];
@@ -30,35 +30,6 @@ const TOKEN_PATH = 'token.json';
             resolve(oAuth2Client)
         })
     })
-}
-
-/**
- * Get and store new token after prompting for user authorization, and then
- * execute the given callback with the authorized OAuth2 client.
- * @param {google.auth.OAuth2} oAuth2Client The OAuth2 client to get token for.
- */
- function getAccessToken(oAuth2Client) {
-    const authUrl = oAuth2Client.generateAuthUrl({
-        access_type: 'offline',
-        scope: SCOPES,
-    });
-    console.log('Authorize this app by visiting this url:', authUrl);
-    const rl = readline.createInterface({
-        input: process.stdin,
-        output: process.stdout,
-    });
-    rl.question('Enter the code from that page here: ', (code) => {
-        rl.close();
-        oAuth2Client.getToken(code, (err, token) => {
-            if (err) return console.error('Error retrieving access token', err);
-            oAuth2Client.setCredentials(token);
-            // Store the token to disk for later program executions
-            fs.writeFile(TOKEN_PATH, JSON.stringify(token), (err) => {
-                if (err) return console.error(err);
-                console.log('Token stored to', TOKEN_PATH);
-            });
-        });
-    });
 }
 
 /**
@@ -97,4 +68,4 @@ async function listEvents(credentials) {
 }
 
 
-module.exports = { listEvents }
+module.exports = { authorize, listEvents, SCOPES }
