@@ -4,6 +4,7 @@ const readline = require('readline');
 const moment = require('moment');
 const { google } = require('googleapis');
 const Event = require('./EventClass');
+const { admin } = require('./firebaseConfig')
 
 // If modifying these scopes, delete token.json.
 const SCOPES = ['https://www.googleapis.com/auth/calendar.readonly'];
@@ -17,18 +18,30 @@ const TOKEN_PATH = 'token.json';
  * given callback function.
  * @param {Object} credentials The authorization client credentials.
  */
- async function authorize(credentials) {
+ async function authorize(credentials, chatId) {
+    return new Promise(async (resolve) => {
+        const oAuth2Client = await getOauthClient(credentials)
+        const configuration = await admin
+        .database()
+        .ref(`/configurations/`)
+        .child(chatId)
+        .once('value')
+        .then(function (snapshot) {
+            return Promise.resolve(snapshot.val())
+        })
+
+        oAuth2Client.setCredentials(configuration);
+        resolve(oAuth2Client)
+    })
+}
+
+async function getOauthClient(credentials) {
     return new Promise((resolve) => {
         const { client_secret, client_id, redirect_uris } = credentials.installed;
         const oAuth2Client = new google.auth.OAuth2(
             client_id, client_secret, redirect_uris[0]);
 
-        // Check if we have previously stored a token.
-        fs.readFile(TOKEN_PATH, (err, token) => {
-            if (err) return getAccessToken(oAuth2Client);
-            oAuth2Client.setCredentials(JSON.parse(token));
-            resolve(oAuth2Client)
-        })
+        resolve(oAuth2Client)
     })
 }
 
@@ -36,9 +49,9 @@ const TOKEN_PATH = 'token.json';
  * Lists the next week free slts on the user's primary calendar.
  * @param {Object} credentials The authorization client credentials.
  */
-async function listEvents(credentials) {
+async function listEvents(credentials, chatId) {
     return new Promise(async (resolve) => {
-        const auth = await authorize(credentials)
+        const auth = await authorize(credentials, chatId)
         console.log(auth)
         const calendar = google.calendar({ version: 'v3', auth });
         calendar.freebusy.query({requestBody: {
@@ -68,4 +81,4 @@ async function listEvents(credentials) {
 }
 
 
-module.exports = { authorize, listEvents, SCOPES }
+module.exports = { authorize, getOauthClient, listEvents, SCOPES }

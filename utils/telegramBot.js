@@ -1,7 +1,8 @@
 const { Telegraf, session, Scenes } = require('telegraf')
 require('dotenv').config()
+const { admin } = require('./firebaseConfig')
 const moment = require('moment');
-const { listEvents, authorize, SCOPES } = require('./calendarMethods');
+const { listEvents, authorize, getOauthClient, SCOPES } = require('./calendarMethods');
 
 const { enter, leave } = Scenes.Stage
 const authScene = new Scenes.BaseScene('authScene');
@@ -23,23 +24,23 @@ class TelegramBot {
         this.bot.use(stage.middleware())
         this.bot.start((ctx) => ctx.reply('Type /configure to start'))
         
-        
-
         this.bot.on('inline_query', (ctx) => this.inlineQuery(this.credentials, ctx))
 
         this.bot.command("configure", async (ctx) => {
-            console.log(ctx.scene)
-            const oAuth2Client = await authorize(this.credentials)
+            console.log(ctx.chat.id)
+            const oAuth2Client = await getOauthClient(this.credentials)
             ctx.scene.enter('authScene')
             this.getAccessToken(oAuth2Client, authScene)
         })
-        this.bot.on('message', (ctx) => ctx.reply('Try /configure'))
+
+        //this.bot.on('message', (ctx) => ctx.reply('Try /configure'))
         this.bot.launch()
         
     }
 
     async inlineQuery(credentials, ctx) {
-        const events = await listEvents(credentials)
+        console.log(ctx.update.inline_query.from)
+        const events = await listEvents(credentials, ctx.update.inline_query.from.id)
         const result = [{
             type: 'article',
             title: "Show Next Week Calendar Slots",
@@ -74,28 +75,27 @@ Enter the code from that page here:`))
 
         authScene.on('message', (ctx) => {
             console.log(ctx.message.text)
-            console.log("leave"); 
-            ctx.scene.leave('authScene')
-            ctx.replyWithMarkdown(`You are now authorized to use this bot.
-Just type \`@BookMyCalendarBot\` in any chat to print out your availabilities retrieved from your personal Calendar.`)
-        })
 
-        /*const rl = readline.createInterface({
-            input: process.stdin,
-            output: process.stdout,
-        });
-        rl.question('Enter the code from that page here: ', (code) => {
-            rl.close();
-            oAuth2Client.getToken(code, (err, token) => {
-                if (err) return console.error('Error retrieving access token', err);
+            oAuth2Client.getToken(ctx.message.text, (err, token) => {
+                console.log(token)
+                if (err) {
+                    console.log("leave"); 
+                    ctx.scene.leave('authScene')
+                    return ctx.replyWithMarkdown('Something went wrong with the code you submitted. Try again starting again the procedure typing /configure');
+                }
+
+                admin
+                .database()
+                .ref(`/configurations/`)
+                .child(ctx.chat.id).set(token)
+
+                ctx.replyWithMarkdown(`You are now authorized to use this bot.
+Just type \`@BookMyCalendarBot\` in any chat to print out your availabilities retrieved from your personal Calendar.`)
                 oAuth2Client.setCredentials(token);
-                // Store the token to disk for later program executions
-                fs.writeFile(TOKEN_PATH, JSON.stringify(token), (err) => {
-                    if (err) return console.error(err);
-                    console.log('Token stored to', TOKEN_PATH);
-                });
-            });
-        });*/
+                console.log("leave"); 
+                ctx.scene.leave('authScene')
+            })   
+        })
     }
 }
 
