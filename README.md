@@ -15,3 +15,6 @@ And so on...
 This inline bot saves your life.
 
 Just type `@gcal freeslots` to immediately print your own availabilities of the next week, retrieved from your Google Calendar account.
+
+
+If you like this job, feel free to contribute and show me your love by buying me a coffee or more: https://github.com/sponsors/storrisi ❤️🙏
