@@ -49,10 +49,24 @@ async function getOauthClient(credentials) {
  * Lists the next week free slts on the user's primary calendar.
  * @param {Object} credentials The authorization client credentials.
  */
+ async function listCalendars(credentials, chatId) {
+    return new Promise(async (resolve) => {
+        const auth = await authorize(credentials, chatId)
+        const calendar = google.calendar({ version: 'v3', auth });
+        calendar.calendarList.list((err, res) => {
+            if (err) return console.log('The API returned an error: ' + err);
+            return resolve(res.data.items);
+        })
+    })
+ }
+
+/**
+ * Lists the next week free slts on the user's primary calendar.
+ * @param {Object} credentials The authorization client credentials.
+ */
 async function listEvents(credentials, chatId) {
     return new Promise(async (resolve) => {
         const auth = await authorize(credentials, chatId)
-        console.log(auth)
         const calendar = google.calendar({ version: 'v3', auth });
         calendar.freebusy.query({requestBody: {
             "timeMin": moment().toISOString(),
@@ -81,4 +95,4 @@ async function listEvents(credentials, chatId) {
 }
 
 
-module.exports = { authorize, getOauthClient, listEvents, SCOPES }
+module.exports = { authorize, getOauthClient, listEvents, listCalendars, SCOPES }

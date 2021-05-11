@@ -2,12 +2,11 @@ const { Telegraf, session, Scenes } = require('telegraf')
 require('dotenv').config()
 const { admin } = require('./firebaseConfig')
 const moment = require('moment');
-const { listEvents, authorize, getOauthClient, SCOPES } = require('./calendarMethods');
+const { listEvents, authorize, getOauthClient, SCOPES, listCalendars } = require('./calendarMethods');
 
 const { enter, leave } = Scenes.Stage
 const authScene = new Scenes.BaseScene('authScene');
-
-
+const calendarsScene = new Scenes.BaseScene('calendarsScene');
 class TelegramBot {
     constructor(credentials) {
         console.log(process.env.BOT_TOKEN)
@@ -17,7 +16,7 @@ class TelegramBot {
     init() {
         console.log(this)
         this.bot = new Telegraf(process.env.BOT_TOKEN)
-        const stage = new Scenes.Stage([authScene], {
+        const stage = new Scenes.Stage([authScene, calendarsScene], {
             ttl: 10,
         })
         this.bot.use(session())
@@ -27,10 +26,14 @@ class TelegramBot {
         this.bot.on('inline_query', (ctx) => this.inlineQuery(this.credentials, ctx))
 
         this.bot.command("configure", async (ctx) => {
-            console.log(ctx.chat.id)
             const oAuth2Client = await getOauthClient(this.credentials)
             ctx.scene.enter('authScene')
             this.getAccessToken(oAuth2Client, authScene)
+        })
+
+        this.bot.command("calendars", async (ctx) => {
+            ctx.scene.enter('calendarsScene')
+            this.retrieveCalendars(calendarsScene)
         })
 
         //this.bot.on('message', (ctx) => ctx.reply('Try /configure'))
@@ -89,12 +92,40 @@ Enter the code from that page here:`))
                 .ref(`/configurations/`)
                 .child(ctx.chat.id).set(token)
 
+                listCalendars(this.credentials, ctx.chat.id)
+
                 ctx.replyWithMarkdown(`You are now authorized to use this bot.
 Just type \`@BookMyCalendarBot\` in any chat to print out your availabilities retrieved from your personal Calendar.`)
                 oAuth2Client.setCredentials(token);
                 console.log("leave"); 
                 ctx.scene.leave('authScene')
             })   
+        })
+    }
+
+    retrieveCalendars(calendarsScene) {
+
+        calendarsScene.enter(async (ctx) => {
+
+            const res = await listCalendars(this.credentials, ctx.chat.id)
+            ctx.replyWithMarkdown(`This is the list of your calendars:
+                ${res.map((res, index) => {
+                    return `
+${index} - ${res.summary}`
+                })}
+
+Type a comma separated list of the calendars numbers that you want to be tracked (es \`1,2,3\`)`)
+        })
+
+        calendarsScene.on('message', (ctx) => {
+            const regex = new RegExp(/^\d(,\d)*$/gm)
+            if (regex.test(ctx.message.text)) return ctx.reply("Great!")
+            return ctx.reply("Bad format, try again")
+        })
+
+        calendarsScene.command('cancel',() => {
+            console.log("leave")
+            leave()
         })
     }
 }
